@@ -55,6 +55,7 @@ COPY --from=build /build/ucfs-claimant-kafka-consumer.jar .
 COPY ./ucfs-claimant-kafka-consumer-keystore.jks ./development-keystore.jks
 COPY ./ucfs-claimant-kafka-consumer-truststore.jks ./development-truststore.jks
 COPY ./rds-*.pem ./
+COPY ./truststore.jks ./
 RUN chown -R $USER_NAME.$GROUP_NAME /ucfs-claimant-kafka-consumer
 RUN chown -R $USER_NAME.$GROUP_NAME /var
 RUN chmod a+rw /var/log

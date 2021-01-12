@@ -38,19 +38,27 @@ class RdsConfiguration(private val databaseCaCertPath: String,
                                               it.string("password")).fix()
         }.map { (instance, host, port, username, password) ->
             BasicDataSource().apply {
+                driverClassName = "com.mysql.cj.jdbc.Driver"
                 addConnectionProperty("user", username)
                 addConnectionProperty("password", password)
-                url = "jdbc:mysql://$host:$port/$instance"
                 log.info("CA Certificate path", "path" to databaseCaCertPath, "exists" to "${File(databaseCaCertPath).isFile}")
-                if (databaseCaCertPath.isNotBlank()) {
-                    addConnectionProperty("ssl_ca_path", databaseCaCertPath)
-                    addConnectionProperty("ssl_ca", File(databaseCaCertPath).readText())
-                    addConnectionProperty("ssl_verify_cert", "true")
-                }
-                else {
-                    addConnectionProperty("useSSL", "false")
-                }
+//                if (databaseCaCertPath.isNotBlank()) {
+                    url = "jdbc:mysql://$host:$port/$instance?enabledTLSProtocols=TLSv1.2"
+                    log.info("Database url", "url" to url)
+                    addConnectionProperty("enabledTLSProtocols", "TLSv1.2")
+                    addConnectionProperty("sslMode", "REQUIRED")
+//                    addConnectionProperty("clientCertificateKeyStoreUrl", "file:./$databaseCaCertPath")
+//                    addConnectionProperty("clientCertificateKeyStorePassword", "password")
+                    addConnectionProperty("trustCertificateKeyStoreUrl", "file:./$databaseCaCertPath")
+                    addConnectionProperty("trustCertificateKeyStorePassword", "password")
+//                }
+//                else {
+//                    url = "jdbc:mysql://$host:$port/$instance"
+//                    addConnectionProperty("useSSL", "false")
+//                }
+                println("BasicDataSource: $this")
             }
+
         }.fold(
             ifRight = ::identity,
             ifLeft = {

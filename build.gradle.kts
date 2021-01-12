@@ -38,7 +38,7 @@ dependencies {
     implementation("software.amazon.awssdk:ssm:2.15.45")
     implementation("software.amazon.awssdk:kms:2.15.45")
     implementation("software.amazon.awssdk:secretsmanager:2.15.45")
-    implementation("mysql:mysql-connector-java:6.0.6")
+    implementation("mysql:mysql-connector-java:8.0.22")
     implementation("org.apache.commons:commons-dbcp2:2.8.0")
 
     kapt("io.arrow-kt:arrow-meta:0.11.0")
