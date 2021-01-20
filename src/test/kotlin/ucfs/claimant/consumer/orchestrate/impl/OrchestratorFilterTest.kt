@@ -1,6 +1,5 @@
 package ucfs.claimant.consumer.orchestrate.impl
 
-import arrow.core.left
 import arrow.core.right
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -24,29 +23,16 @@ import kotlin.time.seconds
 import kotlin.time.toJavaDuration
 
 @ExperimentalTime
-class OrchestratorTargetTest : StringSpec() {
+class OrchestratorFilterTest : StringSpec() {
 
     init {
-        "Sends updates, deletes to success target, writes failures to the dlq" {
+        "Sends filtered updates to the success target" {
             val successTarget = mock<SuccessTarget>()
             val failureTarget = mock<FailureTarget>()
-            with (orchestrator(consumerProvider(), preProcessor(), compoundProcessor(), successTarget, failureTarget)) {
+            with (orchestrator(consumerProvider(), mock(), compoundProcessor(), successTarget, failureTarget)) {
                 shouldThrow<RuntimeException> { orchestrate() }
             }
-            validateFailures(failureTarget)
             validateSuccesses(successTarget)
-        }
-    }
-
-    private fun validateFailures(failureTarget: FailureTarget) {
-        argumentCaptor<List<SourceRecord>> {
-            verify(failureTarget, times(1)).send(capture())
-            firstValue.size shouldBe (100 / 4) + (50 / 4)
-            firstValue.forEach {
-                it.topic() shouldBe TOPIC
-                it.partition() shouldBe 0
-                String(it.key()).toInt() % 4 shouldBe 3
-            }
         }
     }
 
@@ -113,62 +99,16 @@ class OrchestratorTargetTest : StringSpec() {
         }
     }
 
-    private fun preProcessor(): PreProcessor {
-        val results = (0..99).map { recordNumber ->
-            when (recordNumber % 4) {
-                0 -> {
-                    JsonProcessingResult(consumerRecord(recordNumber), JsonProcessingExtract(
-                                                                JsonObject(), "id",
-                                                                DatabaseAction.MONGO_INSERT,
-                                                                Pair("date", "datesource"))).right()
-                }
-                1 -> {
-                    JsonProcessingResult(consumerRecord(recordNumber), JsonProcessingExtract(
-                                                                JsonObject(), "id",
-                                                                DatabaseAction.MONGO_UPDATE,
-                                                                Pair("date", "datesource"))).right()
-                }
-                2 -> {
-                    JsonProcessingResult(consumerRecord(recordNumber), JsonProcessingExtract(
-                                                                JsonObject(), "id",
-                                                                DatabaseAction.MONGO_DELETE,
-                                                                Pair("date", "datesource"))).right()
-                }
-                else -> {
-                    consumerRecord(recordNumber).left()
-                }
-            }
-
-        }
-        return mock {
-            on {
-                process(any())
-            } doReturnConsecutively results
-        }
-    }
-
     private fun processingOutputs() =
         (0..99).map { recordNumber ->
-            when (recordNumber % 4) {
-                0 -> {
                     Pair(consumerRecord(recordNumber), mongoInsert(recordNumber)).right()
-                }
-                1, 2 -> {
-                    Pair(consumerRecord(recordNumber), mongoUpdate(recordNumber)).right()
-                }
-                else -> {
-                    consumerRecord(recordNumber).left()
-                }
-            }
         }
 
+    private fun mongoInsert(recordNumber: Int) = FilterResult(transformationResult(recordNumber), true)
 
-    private fun mongoUpdate(recordNumber: Int) = FilterResult(transformationResult(DatabaseAction.MONGO_UPDATE, recordNumber), true)
-    private fun mongoInsert(recordNumber: Int) = FilterResult(transformationResult(DatabaseAction.MONGO_INSERT, recordNumber), true)
-
-    private fun transformationResult(databaseAction: DatabaseAction, recordNumber: Int) =
+    private fun transformationResult(recordNumber: Int) =
         TransformationResult(JsonProcessingExtract(Gson().fromJson("""{ "body": "$recordNumber" }""", JsonObject::class.java), "$recordNumber",
-            databaseAction, Pair("2020-01-01", "_lastModifiedDateTime")), "TRANSFORMED_DB_OBJECT")
+            DatabaseAction.MONGO_INSERT, Pair("2020-01-01", "_lastModifiedDateTime")), "TRANSFORMED_DB_OBJECT")
 
     private fun orchestrator(provider: () -> KafkaConsumer<ByteArray, ByteArray>,
                             preProcessor: PreProcessor,

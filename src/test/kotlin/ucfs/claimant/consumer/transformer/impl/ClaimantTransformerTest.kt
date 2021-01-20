@@ -21,11 +21,9 @@ class ClaimantTransformerTest: StringSpec() {
             }
         }
 
-        "Returns left if nino missing" {
-            transformer().transform(jsonObject(invalidJsonMissingNino)) shouldBeLeft {
-                it.shouldBeTypeOf<Pair<JsonObject, String>>()
-                it.first.json() shouldMatchJson invalidJsonMissingNino
-                it.second shouldBe "nino"
+        "Returns right if nino missing" {
+            transformer().transform(jsonObject(invalidJsonMissingNino)) shouldBeRight {
+                it shouldMatchJson noNinoOutput
             }
         }
 
@@ -77,6 +75,14 @@ class ClaimantTransformerTest: StringSpec() {
                     "citizenId": "2bee0d32-4e18-477c-b5b1-b46d7952a927"
                 },
                 "nino": "xFJrf8lbU4G-LB3gx6uF0z531bs0DIVYQ5o5514Y5OrrlxEriQ_W-jEum6bgveIL9gFwwRswDXz8lgqmTQCgFg=="
+            }"""
+
+        private const val noNinoOutput =
+            """{
+                "_id": {
+                    "citizenId": "2bee0d32-4e18-477c-b5b1-b46d7952a927"
+                },
+                "nino": ""
             }"""
 
         private fun transformer() = ClaimantTransformer(saltProvider())
