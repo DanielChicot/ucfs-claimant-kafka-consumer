@@ -79,21 +79,15 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
                 val (additionsAndModifications, deletes) = splitActions(successfullySourced)
                 val (processed, failedProcessing) = splitProcessed(additionsAndModifications)
                 sendFailures(failedPreprocessing + failedProcessing)
-                sendAdditionsAndModifications(topic, filtered(processed))
+                sendAdditionsAndModifications(topic, processed)
                 sendDeletes(topic, deletes)
             }
 
-    private fun filtered(processed: List<FilterProcessingOutput>) =
-            processed.mapNotNull(FilterProcessingOutput::orNull)
-                .filter {
-                    it.second.passThrough
-                }
-                .map { TransformationProcessingResult(it.first, it.second.transformationResult) }
 
 
     private suspend fun sendAdditionsAndModifications(topicPartition: String,
-                                                      results: List<TransformationProcessingResult>) =
-            successTarget.upsert(topicPartition, results)
+                                                      results: List<FilterProcessingOutput>) =
+            successTarget.upsert(topicPartition, results.mapNotNull(FilterProcessingOutput::orNull))
 
 
     private suspend fun sendDeletes(topic: String, deletes: List<JsonProcessingResult>) =

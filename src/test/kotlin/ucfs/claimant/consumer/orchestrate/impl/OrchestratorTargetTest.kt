@@ -57,7 +57,7 @@ class OrchestratorTargetTest : StringSpec() {
 
     private suspend fun verifyAdditionsAndModifications(successTarget: SuccessTarget) {
         val topicCaptor = argumentCaptor<String>()
-        argumentCaptor<List<TransformationProcessingResult>> {
+        argumentCaptor<List<FilterProcessingResult>> {
             verify(successTarget, times(1)).upsert(topicCaptor.capture(), capture())
             topicCaptor.firstValue shouldBe TOPIC
             firstValue.size shouldBe 50 * 3 / 4 + 1
@@ -69,7 +69,7 @@ class OrchestratorTargetTest : StringSpec() {
                     partition() shouldBe 0
                 }
 
-                with(result.second.extract) {
+                with(result.second.transformationResult.extract) {
                     id.toInt() % 4 shouldNotBe 3
                     action shouldBe if (index % 3 == 0) DatabaseAction.MONGO_INSERT else DatabaseAction.MONGO_UPDATE
                     timestampAndSource shouldBe Pair("2020-01-01", "_lastModifiedDateTime")
