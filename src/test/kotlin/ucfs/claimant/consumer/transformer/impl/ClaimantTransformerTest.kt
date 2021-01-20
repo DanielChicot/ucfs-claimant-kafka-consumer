@@ -27,6 +27,18 @@ class ClaimantTransformerTest: StringSpec() {
             }
         }
 
+        "Returns right if nino empty" {
+            transformer().transform(jsonObject(invalidJsonEmptyNino)) shouldBeRight {
+                it shouldMatchJson noNinoOutput
+            }
+        }
+
+        "Returns right if nino blank" {
+            transformer().transform(jsonObject(invalidJsonBlankNino)) shouldBeRight {
+                it shouldMatchJson noNinoOutput
+            }
+        }
+
         "Returns left if _id missing" {
             transformer().transform(jsonObject(invalidJsonMissingId)) shouldBeLeft {
                 it.shouldBeTypeOf<Pair<JsonObject, String>>()
@@ -65,6 +77,22 @@ class ClaimantTransformerTest: StringSpec() {
                 "_id": {
                     "citizenId": "2bee0d32-4e18-477c-b5b1-b46d7952a927"
                 }
+            }"""
+
+        private const val invalidJsonEmptyNino =
+            """{
+                "_id": {
+                    "citizenId": "2bee0d32-4e18-477c-b5b1-b46d7952a927"
+                },
+                "nino": ""
+            }"""
+
+        private const val invalidJsonBlankNino =
+            """{
+                "_id": {
+                    "citizenId": "2bee0d32-4e18-477c-b5b1-b46d7952a927"
+                },
+                "nino": "    "
             }"""
 
         private const val invalidJsonMissingEverything = "{}"

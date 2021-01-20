@@ -19,7 +19,7 @@ class ClaimantTransformer(private val saltRepository: SaltRepository): Transform
                 val nino = dbObject.nullableString("nino")
                 """{
                         "_id": $id,
-                        "nino": "${nino?.run { hash(nino) } ?: "" }"
+                        "nino": "${nino?.takeIf(String::isNotBlank)?.let(this::hash) ?: "" }"
                     }"""
             }
 
